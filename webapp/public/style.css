@@ -91,16 +91,25 @@ button {
   font-size: 12px;
 }
 
+#app-screen {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 18px 28px;
+  padding: 16px 28px;
   border-bottom: 1px solid var(--border);
-  background: rgba(13, 18, 16, 0.9);
+  background: rgba(13, 18, 16, 0.95);
   backdrop-filter: blur(4px);
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 .brand {
@@ -131,19 +140,37 @@ header {
 }
 
 main {
-  max-width: 1320px;
+  flex: 1;
+  min-height: 0;
+  max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
-  padding: 28px;
+  padding: 20px 28px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+}
+
+.add-panel {
+  flex-shrink: 0;
+  padding: 14px 20px;
 }
 
 .tables-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.tables-grid .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: 16px 20px;
 }
 
 .panel {
@@ -154,7 +181,8 @@ main {
 }
 
 .panel h2 {
-  margin: 0 0 14px 0;
+  flex-shrink: 0;
+  margin: 0 0 10px 0;
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -163,6 +191,7 @@ main {
 }
 
 .panel-head {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -198,7 +227,7 @@ main {
 #add-btn { width: auto; padding: 10px 16px; }
 
 .feedback {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 12px;
   min-height: 1em;
 }
@@ -207,19 +236,45 @@ main {
 .feedback.err { color: var(--danger); }
 
 .table-wrap {
+  flex: 1;
+  min-height: 0;
   width: 100%;
+  overflow-y: auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin-top: 8px;
+  margin-top: 6px;
+}
+
+.table-wrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-wrap::-webkit-scrollbar-track {
+  background: rgba(10, 15, 13, 0.4);
+  border-radius: 3px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dim);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 480px;
+  min-width: 420px;
 }
 
 th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 2;
   text-align: left;
   color: var(--muted);
   font-weight: 600;
@@ -302,13 +357,25 @@ tr:last-child td { border-bottom: none; }
 }
 
 @media (max-width: 960px) {
+  #app-screen {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
   main {
     max-width: 780px;
-    padding: 20px;
+    padding: 16px;
+    overflow: visible;
   }
   .tables-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
+  }
+  .tables-grid .panel {
+    height: auto;
+  }
+  .table-wrap {
+    max-height: 400px;
   }
 }
 

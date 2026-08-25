@@ -26,6 +26,13 @@ db.exec(`
     ip TEXT,
     connected_at INTEGER
   );
+  CREATE TABLE IF NOT EXISTS kicks (
+    uuid TEXT,
+    username TEXT,
+    ip TEXT,
+    reason TEXT,
+    kicked_at INTEGER
+  );
 `);
 
 console.log(`Using whitelist database at: ${DB_PATH}`);
@@ -104,6 +111,16 @@ app.get('/api/connections', requireAuth, (req, res) => {
     SELECT uuid, username, ip, connected_at
     FROM connections
     ORDER BY connected_at DESC
+    LIMIT 50
+  `).all();
+  res.json(rows);
+});
+
+app.get('/api/kicks', requireAuth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT uuid, username, ip, reason, kicked_at
+    FROM kicks
+    ORDER BY kicked_at DESC
     LIMIT 50
   `).all();
   res.json(rows);

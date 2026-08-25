@@ -12,6 +12,7 @@ const addFeedback = document.getElementById('add-feedback');
 const refreshBtn = document.getElementById('refresh-btn');
 const playersBody = document.getElementById('players-body');
 const connectionsBody = document.getElementById('connections-body');
+const kicksBody = document.getElementById('kicks-body');
 const playerCount = document.getElementById('player-count');
 
 async function login() {
@@ -33,6 +34,7 @@ async function login() {
     appScreen.classList.remove('hidden');
     loadPlayers();
     loadConnections();
+    loadKicks();
   } catch (err) {
     loginError.textContent = 'Could not reach server';
   }
@@ -99,6 +101,32 @@ async function loadConnections() {
   `).join('');
 }
 
+async function loadKicks() {
+  const res = await fetch('/api/kicks', { headers: authHeaders() });
+  if (!res.ok) return;
+  const rows = await res.json();
+  if (rows.length === 0) {
+    kicksBody.innerHTML = '<tr><td colspan="5" class="muted">no kicks or blocked attempts logged yet</td></tr>';
+    return;
+  }
+  kicksBody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.username)}</td>
+      <td><span class="tag-danger">${escapeHtml(r.reason || 'Not Whitelisted')}</span></td>
+      <td class="muted">${escapeHtml(r.ip || '')}</td>
+      <td class="muted">${timeAgo(r.kicked_at)}</td>
+      <td><button class="quick-add-btn" data-name="${escapeHtml(r.username)}">+ whitelist</button></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('.quick-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      addUsername.value = btn.dataset.name;
+      addPlayer();
+    });
+  });
+}
+
 async function addPlayer() {
   const username = addUsername.value.trim();
   addFeedback.textContent = '';
@@ -138,7 +166,7 @@ async function removePlayer(uuid) {
   loadPlayers();
 }
 
-refreshBtn.addEventListener('click', () => { loadPlayers(); loadConnections(); });
+refreshBtn.addEventListener('click', () => { loadPlayers(); loadConnections(); loadKicks(); });
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -146,4 +174,5 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-setInterval(() => { if (token) loadConnections(); }, 15000);
+setInterval(() => { if (token) { loadConnections(); loadKicks(); } }, 10000);
+

@@ -48,6 +48,16 @@ public class WhitelistDatabase {
                 )
                 """);
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_connections_uuid ON connections(uuid)");
+            st.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS kicks (
+                    uuid TEXT,
+                    username TEXT,
+                    ip TEXT,
+                    reason TEXT,
+                    kicked_at INTEGER
+                )
+                """);
+            st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_kicks_time ON kicks(kicked_at DESC)");
         } catch (SQLException e) {
             logger.severe("[SimpleWhitelist] Failed to initialize database: " + e.getMessage());
         }
@@ -129,6 +139,20 @@ public class WhitelistDatabase {
             ps.executeUpdate();
         } catch (SQLException e) {
             logger.warning("[SimpleWhitelist] Failed to log connection: " + e.getMessage());
+        }
+    }
+
+    public void logKick(UUID uuid, String username, String ip, String reason) {
+        String sql = "INSERT INTO kicks (uuid, username, ip, reason, kicked_at) VALUES (?, ?, ?, ?, ?)";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, username);
+            ps.setString(3, ip);
+            ps.setString(4, reason);
+            ps.setLong(5, System.currentTimeMillis());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.warning("[SimpleWhitelist] Failed to log kick: " + e.getMessage());
         }
     }
 }

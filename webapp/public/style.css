@@ -235,8 +235,30 @@ tr:last-child td { border-bottom: none; }
 
 .remove-btn:hover { border-color: var(--danger); }
 
+.quick-add-btn {
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.quick-add-btn:hover {
+  background: var(--accent);
+  color: #06120c;
+}
+
+.tag-danger {
+  color: var(--danger);
+  font-size: 11px;
+  background: rgba(230, 104, 94, 0.1);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
 @media (max-width: 600px) {
   main { padding: 16px; }
   header { padding: 14px 16px; }
   .add-row { flex-direction: column; }
 }
+

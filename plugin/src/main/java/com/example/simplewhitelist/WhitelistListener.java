@@ -24,6 +24,8 @@ public class WhitelistListener implements Listener {
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
         boolean allowed = db.isWhitelisted(event.getUniqueId());
         if (!allowed) {
+            String ip = event.getAddress() != null ? event.getAddress().getHostAddress() : "unknown";
+            db.logKick(event.getUniqueId(), event.getName(), ip, "Not Whitelisted");
             Component message = LegacyComponentSerializer.legacyAmpersand().deserialize(kickMessage);
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_WHITELIST, message);
         }

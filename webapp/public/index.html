@@ -30,7 +30,7 @@
   </header>
 
   <main>
-    <section class="panel">
+    <section class="panel add-panel">
       <h2>Add player</h2>
       <div class="add-row">
         <input id="add-username" type="text" placeholder="Minecraft username" autocomplete="off">
@@ -39,50 +39,54 @@
       <div id="add-feedback" class="feedback"></div>
     </section>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Whitelisted players</h2>
-        <button id="refresh-btn" class="ghost-btn">refresh</button>
-      </div>
-      <div class="table-wrap">
-        <table id="players-table">
-          <thead>
-            <tr><th>username</th><th>uuid</th><th>added</th><th></th></tr>
-          </thead>
-          <tbody id="players-body">
-            <tr><td colspan="4" class="muted">loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <div class="tables-grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Whitelisted players</h2>
+          <button id="refresh-btn" class="ghost-btn">refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table id="players-table">
+            <thead>
+              <tr><th>username</th><th>uuid</th><th>added</th><th></th></tr>
+            </thead>
+            <tbody id="players-body">
+              <tr><td colspan="4" class="muted">loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-    <section class="panel">
-      <h2>Recent connections</h2>
-      <div class="table-wrap">
-        <table id="connections-table">
-          <thead>
-            <tr><th>username</th><th>ip</th><th>when</th></tr>
-          </thead>
-          <tbody id="connections-body">
-            <tr><td colspan="3" class="muted">loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+      <div class="tables-col">
+        <section class="panel">
+          <h2>Recently kicked / blocked</h2>
+          <div class="table-wrap">
+            <table id="kicks-table">
+              <thead>
+                <tr><th>username</th><th>reason</th><th>ip</th><th>when</th><th>action</th></tr>
+              </thead>
+              <tbody id="kicks-body">
+                <tr><td colspan="5" class="muted">loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-    <section class="panel">
-      <h2>Recently kicked / blocked</h2>
-      <div class="table-wrap">
-        <table id="kicks-table">
-          <thead>
-            <tr><th>username</th><th>reason</th><th>ip</th><th>when</th><th>action</th></tr>
-          </thead>
-          <tbody id="kicks-body">
-            <tr><td colspan="5" class="muted">loading...</td></tr>
-          </tbody>
-        </table>
+        <section class="panel">
+          <h2>Recent connections</h2>
+          <div class="table-wrap">
+            <table id="connections-table">
+              <thead>
+                <tr><th>username</th><th>ip</th><th>when</th></tr>
+              </thead>
+              <tbody id="connections-body">
+                <tr><td colspan="3" class="muted">loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
   </main>
 </div>
 

@@ -131,9 +131,22 @@ header {
 }
 
 main {
-  max-width: 780px;
+  max-width: 1320px;
   margin: 0 auto;
   padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tables-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.tables-col {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -292,6 +305,20 @@ tr:last-child td { border-bottom: none; }
   padding: 3px 6px;
   border-radius: 2px;
   white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  main {
+    max-width: 780px;
+    padding: 20px;
+  }
+  .tables-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .tables-col {
+    gap: 20px;
+  }
 }
 
 @media (max-width: 640px) {

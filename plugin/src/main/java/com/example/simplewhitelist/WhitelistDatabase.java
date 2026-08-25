@@ -72,7 +72,7 @@ public class WhitelistDatabase {
     }
 
     public boolean isWhitelisted(UUID uuid) {
-        String sql = "SELECT 1 FROM whitelist WHERE uuid = ? LIMIT 1";
+        String sql = "SELECT 1 FROM whitelist WHERE uuid = ? COLLATE NOCASE LIMIT 1";
         try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
@@ -81,6 +81,38 @@ public class WhitelistDatabase {
         } catch (SQLException e) {
             logger.warning("[SimpleWhitelist] Whitelist lookup failed, denying by default: " + e.getMessage());
             return false;
+        }
+    }
+
+    public boolean isWhitelisted(UUID uuid, String username) {
+        String sql = "SELECT uuid, username FROM whitelist WHERE uuid = ? COLLATE NOCASE OR username = ? COLLATE NOCASE LIMIT 1";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String existingUuid = rs.getString("uuid");
+                    if (existingUuid == null || !uuid.toString().equalsIgnoreCase(existingUuid)) {
+                        updatePlayerUuid(uuid, username);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        } catch (SQLException e) {
+            logger.warning("[SimpleWhitelist] Whitelist lookup failed, denying by default: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public void updatePlayerUuid(UUID uuid, String username) {
+        String sql = "UPDATE whitelist SET uuid = ? WHERE username = ? COLLATE NOCASE";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, username);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.warning("[SimpleWhitelist] Failed to update UUID: " + e.getMessage());
         }
     }
 

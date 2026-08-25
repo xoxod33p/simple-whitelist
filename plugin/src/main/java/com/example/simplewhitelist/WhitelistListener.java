@@ -22,7 +22,7 @@ public class WhitelistListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
-        boolean allowed = db.isWhitelisted(event.getUniqueId());
+        boolean allowed = db.isWhitelisted(event.getUniqueId(), event.getName());
         if (!allowed) {
             String ip = event.getAddress() != null ? event.getAddress().getHostAddress() : "unknown";
             db.logKick(event.getUniqueId(), event.getName(), ip, "Not Whitelisted");

@@ -38,7 +38,7 @@ public class SimpleWhitelistPlugin extends JavaPlugin {
             long ticks = syncIntervalSeconds * 20L;
             getServer().getScheduler().runTaskTimer(this, () -> {
                 for (Player player : getServer().getOnlinePlayers()) {
-                    if (!db.isWhitelisted(player.getUniqueId())) {
+                    if (!db.isWhitelisted(player.getUniqueId(), player.getName())) {
                         String ip = player.getAddress() != null && player.getAddress().getAddress() != null
                                 ? player.getAddress().getAddress().getHostAddress() : "unknown";
                         db.logKick(player.getUniqueId(), player.getName(), ip, "Removed from whitelist");

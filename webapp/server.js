@@ -63,12 +63,26 @@ function normalizeUuid(raw) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+const crypto = require('crypto');
+
+function getOfflineUuid(username) {
+  const hash = crypto.createHash('md5').update('OfflinePlayer:' + username, 'utf8').digest('hex');
+  const chars = hash.split('');
+  chars[12] = '3';
+  chars[16] = ((parseInt(chars[16], 16) & 0x3) | 0x8).toString(16);
+  const hex = chars.join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 async function lookupUuid(username) {
-  const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(username)}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Mojang API error: ${res.status}`);
-  const data = await res.json();
-  return { uuid: normalizeUuid(data.id), username: data.name };
+  try {
+    const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${encodeURIComponent(username)}`);
+    if (res.ok) {
+      const data = await res.json();
+      return { uuid: normalizeUuid(data.id), username: data.name };
+    }
+  } catch (err) {}
+  return { uuid: getOfflineUuid(username), username: username };
 }
 
 app.get('/api/players', requireAuth, (req, res) => {
@@ -93,9 +107,6 @@ app.post('/api/players', requireAuth, async (req, res) => {
   }
   try {
     const resolved = await lookupUuid(cleanName);
-    if (!resolved) {
-      return res.status(404).json({ error: `No Mojang account found for "${cleanName}"` });
-    }
     db.prepare(`
       INSERT INTO whitelist (uuid, username, added_by, added_at)
       VALUES (?, ?, ?, ?)
@@ -104,12 +115,13 @@ app.post('/api/players', requireAuth, async (req, res) => {
     res.status(201).json({ uuid: resolved.uuid, username: resolved.username });
   } catch (err) {
     console.error(err);
-    res.status(502).json({ error: 'Failed to resolve username against Mojang API' });
+    res.status(500).json({ error: 'Failed to add player' });
   }
 });
 
-app.delete('/api/players/:uuid', requireAuth, (req, res) => {
-  const info = db.prepare('DELETE FROM whitelist WHERE uuid = ?').run(req.params.uuid);
+app.delete('/api/players/:id', requireAuth, (req, res) => {
+  const param = req.params.id;
+  const info = db.prepare('DELETE FROM whitelist WHERE uuid = ? OR username = ? COLLATE NOCASE').run(param, param);
   if (info.changes === 0) {
     return res.status(404).json({ error: 'Not found' });
   }

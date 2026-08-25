@@ -91,81 +91,97 @@ function timeAgo(ms) {
   return `${days}d ago`;
 }
 
-async function loadPlayers() {
-  const res = await fetch('/api/players', { headers: authHeaders() });
-  if (!res.ok) return;
-  const players = await res.json();
-  playerCount.textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
-
-  whitelistedUuids = new Set(players.map(p => p.uuid));
-  whitelistedNames = new Set(players.map(p => (p.username || '').toLowerCase()));
-
-  if (players.length === 0) {
-    playersBody.innerHTML = '<tr><td colspan="4" class="muted">no one whitelisted yet</td></tr>';
-    return;
+async function fetchAuth(url, options = {}) {
+  const headers = { ...(options.headers || {}), ...authHeaders() };
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    logout();
+    throw new Error('Session expired or unauthorized');
   }
+  return res;
+}
 
-  playersBody.innerHTML = players.map(p => `
-    <tr>
-      <td><strong>${escapeHtml(p.username)}</strong></td>
-      <td class="uuid-cell">${p.uuid}</td>
-      <td class="muted">${timeAgo(p.added_at)}</td>
-      <td><button class="remove-btn" data-uuid="${p.uuid}">remove</button></td>
-    </tr>
-  `).join('');
+async function loadPlayers() {
+  try {
+    const res = await fetchAuth('/api/players');
+    if (!res.ok) return;
+    const players = await res.json();
+    playerCount.textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
 
-  document.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => removePlayer(btn.dataset.uuid));
-  });
+    whitelistedUuids = new Set(players.map(p => p.uuid));
+    whitelistedNames = new Set(players.map(p => (p.username || '').toLowerCase()));
+
+    if (players.length === 0) {
+      playersBody.innerHTML = '<tr><td colspan="4" class="muted">no one whitelisted yet</td></tr>';
+      return;
+    }
+
+    playersBody.innerHTML = players.map(p => `
+      <tr>
+        <td><strong>${escapeHtml(p.username)}</strong></td>
+        <td class="uuid-cell">${escapeHtml(p.uuid)}</td>
+        <td class="muted">${timeAgo(p.added_at)}</td>
+        <td><button class="remove-btn" data-uuid="${escapeHtml(p.uuid)}">remove</button></td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => removePlayer(btn.dataset.uuid));
+    });
+  } catch (err) {}
 }
 
 async function loadConnections() {
-  const res = await fetch('/api/connections', { headers: authHeaders() });
-  if (!res.ok) return;
-  const rows = await res.json();
-  if (rows.length === 0) {
-    connectionsBody.innerHTML = '<tr><td colspan="3" class="muted">no connections logged yet</td></tr>';
-    return;
-  }
-  connectionsBody.innerHTML = rows.map(r => `
-    <tr>
-      <td><strong>${escapeHtml(r.username)}</strong></td>
-      <td class="muted">${escapeHtml(r.ip || '')}</td>
-      <td class="muted">${timeAgo(r.connected_at)}</td>
-    </tr>
-  `).join('');
+  try {
+    const res = await fetchAuth('/api/connections');
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (rows.length === 0) {
+      connectionsBody.innerHTML = '<tr><td colspan="3" class="muted">no connections logged yet</td></tr>';
+      return;
+    }
+    connectionsBody.innerHTML = rows.map(r => `
+      <tr>
+        <td><strong>${escapeHtml(r.username)}</strong></td>
+        <td class="muted">${escapeHtml(r.ip || '')}</td>
+        <td class="muted">${timeAgo(r.connected_at)}</td>
+      </tr>
+    `).join('');
+  } catch (err) {}
 }
 
 async function loadKicks() {
-  const res = await fetch('/api/kicks', { headers: authHeaders() });
-  if (!res.ok) return;
-  const rows = await res.json();
-  if (rows.length === 0) {
-    kicksBody.innerHTML = '<tr><td colspan="5" class="muted">no kicks or blocked attempts logged yet</td></tr>';
-    return;
-  }
-  kicksBody.innerHTML = rows.map(r => {
-    const isWhitelisted = (r.uuid && whitelistedUuids.has(r.uuid)) ||
-                          (r.username && whitelistedNames.has(r.username.toLowerCase()));
-    return `
-      <tr>
-        <td><strong>${escapeHtml(r.username)}</strong></td>
-        <td><span class="tag-danger">${escapeHtml(r.reason || 'Not Whitelisted')}</span></td>
-        <td class="muted">${escapeHtml(r.ip || '')}</td>
-        <td class="muted">${timeAgo(r.kicked_at)}</td>
-        <td>
-          ${isWhitelisted
-            ? '<span class="tag-allowed">whitelisted &#10003;</span>'
-            : `<button class="allow-btn" data-name="${escapeHtml(r.username)}" data-uuid="${escapeHtml(r.uuid || '')}">allow connection</button>`
-          }
-        </td>
-      </tr>
-    `;
-  }).join('');
+  try {
+    const res = await fetchAuth('/api/kicks');
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (rows.length === 0) {
+      kicksBody.innerHTML = '<tr><td colspan="5" class="muted">no kicks or blocked attempts logged yet</td></tr>';
+      return;
+    }
+    kicksBody.innerHTML = rows.map(r => {
+      const isWhitelisted = (r.uuid && whitelistedUuids.has(r.uuid)) ||
+                            (r.username && whitelistedNames.has(r.username.toLowerCase()));
+      return `
+        <tr>
+          <td><strong>${escapeHtml(r.username)}</strong></td>
+          <td><span class="tag-danger">${escapeHtml(r.reason || 'Not Whitelisted')}</span></td>
+          <td class="muted">${escapeHtml(r.ip || '')}</td>
+          <td class="muted">${timeAgo(r.kicked_at)}</td>
+          <td>
+            ${isWhitelisted
+              ? '<span class="tag-allowed">whitelisted &#10003;</span>'
+              : `<button class="allow-btn" data-name="${escapeHtml(r.username)}" data-uuid="${escapeHtml(r.uuid || '')}">allow connection</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
 
-  document.querySelectorAll('.allow-btn').forEach(btn => {
-    btn.addEventListener('click', () => allowPlayer(btn.dataset.name, btn.dataset.uuid, btn));
-  });
+    document.querySelectorAll('.allow-btn').forEach(btn => {
+      btn.addEventListener('click', () => allowPlayer(btn.dataset.name, btn.dataset.uuid, btn));
+    });
+  } catch (err) {}
 }
 
 async function allowPlayer(username, uuid, btn) {
@@ -173,9 +189,9 @@ async function allowPlayer(username, uuid, btn) {
   btn.disabled = true;
   btn.textContent = 'allowing...';
   try {
-    const res = await fetch('/api/players', {
+    const res = await fetchAuth('/api/players', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, uuid })
     });
     const data = await res.json();
@@ -193,7 +209,7 @@ async function allowPlayer(username, uuid, btn) {
   } catch (err) {
     btn.textContent = 'error';
     btn.disabled = false;
-    addFeedback.textContent = 'Network error';
+    addFeedback.textContent = err.message || 'Network error';
     addFeedback.className = 'feedback err';
   }
 }
@@ -206,9 +222,9 @@ async function addPlayer() {
 
   addBtn.disabled = true;
   try {
-    const res = await fetch('/api/players', {
+    const res = await fetchAuth('/api/players', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
     });
     const data = await res.json();
@@ -223,7 +239,7 @@ async function addPlayer() {
     await loadPlayers();
     loadKicks();
   } catch (err) {
-    addFeedback.textContent = 'Network error';
+    addFeedback.textContent = err.message || 'Network error';
     addFeedback.className = 'feedback err';
   } finally {
     addBtn.disabled = false;
@@ -234,9 +250,11 @@ addBtn.addEventListener('click', addPlayer);
 addUsername.addEventListener('keydown', (e) => { if (e.key === 'Enter') addPlayer(); });
 
 async function removePlayer(uuid) {
-  await fetch(`/api/players/${uuid}`, { method: 'DELETE', headers: authHeaders() });
-  await loadPlayers();
-  loadKicks();
+  try {
+    await fetchAuth(`/api/players/${encodeURIComponent(uuid)}`, { method: 'DELETE' });
+    await loadPlayers();
+    loadKicks();
+  } catch (err) {}
 }
 
 refreshBtn.addEventListener('click', async () => {
@@ -246,8 +264,9 @@ refreshBtn.addEventListener('click', async () => {
 });
 
 function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
   const div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = String(str);
   return div.innerHTML;
 }
 

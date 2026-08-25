@@ -28,23 +28,34 @@ public class SimpleWhitelistPlugin extends JavaPlugin {
         getLogger().info("Point your webapp's DB_PATH env var at this exact file to manage the whitelist remotely.");
 
         boolean logConnections = getConfig().getBoolean("log-connections", true);
+        boolean strictUuidMatch = getConfig().getBoolean("strict-uuid-match", true);
         String kickMessage = getConfig().getString("kick-message", "&cYou are not whitelisted on this server.");
 
         getServer().getPluginManager().registerEvents(
-                new WhitelistListener(db, kickMessage, logConnections), this);
+                new WhitelistListener(db, kickMessage, logConnections, strictUuidMatch), this);
 
         int syncIntervalSeconds = getConfig().getInt("sync-interval-seconds", 2);
         if (syncIntervalSeconds > 0) {
             long ticks = syncIntervalSeconds * 20L;
-            getServer().getScheduler().runTaskTimer(this, () -> {
+            getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+                java.util.List<Player> toKick = new java.util.ArrayList<>();
                 for (Player player : getServer().getOnlinePlayers()) {
-                    if (!db.isWhitelisted(player.getUniqueId(), player.getName())) {
+                    if (!db.isWhitelisted(player.getUniqueId(), player.getName(), strictUuidMatch)) {
                         String ip = player.getAddress() != null && player.getAddress().getAddress() != null
                                 ? player.getAddress().getAddress().getHostAddress() : "unknown";
                         db.logKick(player.getUniqueId(), player.getName(), ip, "Removed from whitelist");
-                        Component message = LegacyComponentSerializer.legacyAmpersand().deserialize(kickMessage);
-                        player.kick(message);
+                        toKick.add(player);
                     }
+                }
+                if (!toKick.isEmpty()) {
+                    Component message = LegacyComponentSerializer.legacyAmpersand().deserialize(kickMessage);
+                    getServer().getScheduler().runTask(this, () -> {
+                        for (Player p : toKick) {
+                            if (p.isOnline()) {
+                                p.kick(message);
+                            }
+                        }
+                    });
                 }
             }, ticks, ticks);
         }

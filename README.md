@@ -27,7 +27,8 @@ A lightweight Minecraft (Paper) whitelist plugin with a real-time web management
    ```env
    DB_PATH=/path/to/your/server/plugins/SimpleWhitelist/whitelist.db
    PORT=3000
-   ADMIN_PASSWORD=your_password
+   ADMIN_PASSWORD=your_secure_password
+   SESSION_SECRET=your_random_secret_string # (Optional, auto-generated if omitted)
    ```
 
 3. Start the web app:

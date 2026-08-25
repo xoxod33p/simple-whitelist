@@ -85,14 +85,41 @@ public class WhitelistDatabase {
     }
 
     public boolean isWhitelisted(UUID uuid, String username) {
-        String sql = "SELECT uuid, username FROM whitelist WHERE uuid = ? COLLATE NOCASE OR username = ? COLLATE NOCASE LIMIT 1";
-        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+        return isWhitelisted(uuid, username, true);
+    }
+
+    public boolean isWhitelisted(UUID uuid, String username, boolean strictUuidMatch) {
+        // 1. Check by exact UUID match first
+        String sqlByUuid = "SELECT uuid, username FROM whitelist WHERE uuid = ? COLLATE NOCASE LIMIT 1";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sqlByUuid)) {
             ps.setString(1, uuid.toString());
-            ps.setString(2, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String existingName = rs.getString("username");
+                    if (existingName != null && !existingName.equalsIgnoreCase(username)) {
+                        updatePlayerUsername(uuid, username);
+                    }
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            logger.warning("[SimpleWhitelist] Whitelist UUID lookup failed: " + e.getMessage());
+            return false;
+        }
+
+        // If strict UUID matching is enabled, deny non-matching UUIDs to prevent name-spoofing
+        if (strictUuidMatch) {
+            return false;
+        }
+
+        // 2. Fallback to username matching (only if strictUuidMatch is false)
+        String sqlByName = "SELECT uuid, username FROM whitelist WHERE username = ? COLLATE NOCASE LIMIT 1";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sqlByName)) {
+            ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     String existingUuid = rs.getString("uuid");
-                    if (existingUuid == null || !uuid.toString().equalsIgnoreCase(existingUuid)) {
+                    if (existingUuid == null || existingUuid.trim().isEmpty()) {
                         updatePlayerUuid(uuid, username);
                     }
                     return true;
@@ -100,8 +127,19 @@ public class WhitelistDatabase {
                 return false;
             }
         } catch (SQLException e) {
-            logger.warning("[SimpleWhitelist] Whitelist lookup failed, denying by default: " + e.getMessage());
+            logger.warning("[SimpleWhitelist] Whitelist username lookup failed: " + e.getMessage());
             return false;
+        }
+    }
+
+    public void updatePlayerUsername(UUID uuid, String username) {
+        String sql = "UPDATE whitelist SET username = ? WHERE uuid = ? COLLATE NOCASE";
+        try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, uuid.toString());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.warning("[SimpleWhitelist] Failed to update username: " + e.getMessage());
         }
     }
 

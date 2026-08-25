@@ -1,12 +1,19 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const Database = require('better-sqlite3');
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme';
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'whitelist.db');
+
+if (ADMIN_PASSWORD === 'changeme') {
+  console.warn('\x1b[33m%s\x1b[0m', '[SECURITY WARNING] Default ADMIN_PASSWORD ("changeme") is in use! Set a strong ADMIN_PASSWORD in your .env file.');
+}
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
@@ -38,32 +45,149 @@ db.exec(`
 console.log(`Using whitelist database at: ${DB_PATH}`);
 
 const app = express();
-app.use(express.json());
+
+// Security HTTP headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Timing-safe password verification
+function verifyPassword(inputPassword) {
+  if (typeof inputPassword !== 'string') return false;
+  const hashInput = crypto.createHash('sha256').update(inputPassword, 'utf8').digest();
+  const hashTarget = crypto.createHash('sha256').update(ADMIN_PASSWORD, 'utf8').digest();
+  return crypto.timingSafeEqual(hashInput, hashTarget);
+}
+
+// Generate signed session token
+function createSessionToken() {
+  const payload = {
+    iat: Date.now(),
+    exp: Date.now() + TOKEN_TTL_MS,
+    nonce: crypto.randomBytes(16).toString('hex')
+  };
+  const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', SESSION_SECRET).update(payloadEncoded).digest('base64url');
+  return `${payloadEncoded}.${signature}`;
+}
+
+// Verify signed session token
+function verifySessionToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+
+  const [payloadEncoded, signature] = parts;
+  const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadEncoded).digest('base64url');
+
+  const bufActual = Buffer.from(signature, 'utf8');
+  const bufExpected = Buffer.from(expectedSig, 'utf8');
+
+  if (bufActual.length !== bufExpected.length || !crypto.timingSafeEqual(bufActual, bufExpected)) {
+    return false;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64url').toString('utf8'));
+    if (!payload.exp || Date.now() > payload.exp) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// In-memory sliding rate limiter for login
+const loginAttempts = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_PERIOD_MS = 15 * 60 * 1000;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+  if (!record) return { allowed: true };
+
+  if (now - record.firstAttempt > LOCKOUT_PERIOD_MS) {
+    loginAttempts.delete(ip);
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_LOGIN_ATTEMPTS) {
+    const remainingMs = LOCKOUT_PERIOD_MS - (now - record.firstAttempt);
+    return { allowed: false, remainingMinutes: Math.ceil(remainingMs / 60000) };
+  }
+
+  return { allowed: true };
+}
+
+function recordLoginFailure(ip) {
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+  if (!record || now - record.firstAttempt > LOCKOUT_PERIOD_MS) {
+    loginAttempts.set(ip, { count: 1, firstAttempt: now });
+  } else {
+    record.count += 1;
+  }
+}
+
+function clearLoginAttempts(ip) {
+  loginAttempts.delete(ip);
+}
 
 function requireAuth(req, res, next) {
   const auth = req.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (token !== ADMIN_PASSWORD) {
+  if (!verifySessionToken(token)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 }
 
 app.post('/api/login', (req, res) => {
-  const { password } = req.body || {};
-  if (password === ADMIN_PASSWORD) {
-    return res.json({ ok: true, token: ADMIN_PASSWORD });
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  const rateStatus = checkRateLimit(clientIp);
+
+  if (!rateStatus.allowed) {
+    return res.status(429).json({
+      ok: false,
+      error: `Too many failed attempts. Try again in ${rateStatus.remainingMinutes} minute(s).`
+    });
   }
+
+  const { password } = req.body || {};
+  if (verifyPassword(password)) {
+    clearLoginAttempts(clientIp);
+    const token = createSessionToken();
+    return res.json({ ok: true, token });
+  }
+
+  recordLoginFailure(clientIp);
   res.status(401).json({ ok: false, error: 'Wrong password' });
 });
 
 function normalizeUuid(raw) {
   const hex = raw.replace(/-/g, '');
+  if (hex.length !== 32) return raw;
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-const crypto = require('crypto');
+function isValidUuid(uuid) {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid) ||
+         /^[0-9a-fA-F]{32}$/.test(uuid);
+}
+
+function isValidUsername(username) {
+  // Allows Java usernames (3-16 chars) and Bedrock/Floodgate prefixed names (up to 36 chars)
+  return typeof username === 'string' && /^[a-zA-Z0-9_.* -]{1,36}$/.test(username.trim());
+}
 
 function getOfflineUuid(username) {
   const hash = crypto.createHash('md5').update('OfflinePlayer:' + username, 'utf8').digest('hex');
@@ -92,11 +216,13 @@ app.get('/api/players', requireAuth, (req, res) => {
 
 app.post('/api/players', requireAuth, async (req, res) => {
   const { username, uuid } = req.body || {};
-  if (!username || !username.trim()) {
-    return res.status(400).json({ error: 'username is required' });
+  if (!username || typeof username !== 'string' || !isValidUsername(username)) {
+    return res.status(400).json({ error: 'Invalid Minecraft username' });
   }
+
   const cleanName = username.trim();
-  if (uuid && typeof uuid === 'string' && uuid.trim().length >= 32) {
+
+  if (uuid && typeof uuid === 'string' && isValidUuid(uuid.trim())) {
     const finalUuid = normalizeUuid(uuid.trim());
     db.prepare(`
       INSERT INTO whitelist (uuid, username, added_by, added_at)
@@ -105,6 +231,7 @@ app.post('/api/players', requireAuth, async (req, res) => {
     `).run(finalUuid, cleanName, 'webapp', Date.now());
     return res.status(201).json({ uuid: finalUuid, username: cleanName });
   }
+
   try {
     const resolved = await lookupUuid(cleanName);
     db.prepare(`

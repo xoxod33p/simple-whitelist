@@ -13,16 +13,18 @@ public class WhitelistListener implements Listener {
     private final WhitelistDatabase db;
     private final String kickMessage;
     private final boolean logConnections;
+    private final boolean strictUuidMatch;
 
-    public WhitelistListener(WhitelistDatabase db, String kickMessage, boolean logConnections) {
+    public WhitelistListener(WhitelistDatabase db, String kickMessage, boolean logConnections, boolean strictUuidMatch) {
         this.db = db;
         this.kickMessage = kickMessage;
         this.logConnections = logConnections;
+        this.strictUuidMatch = strictUuidMatch;
     }
 
     @EventHandler(priority = EventPriority.LOW)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
-        boolean allowed = db.isWhitelisted(event.getUniqueId(), event.getName());
+        boolean allowed = db.isWhitelisted(event.getUniqueId(), event.getName(), strictUuidMatch);
         if (!allowed) {
             String ip = event.getAddress() != null ? event.getAddress().getHostAddress() : "unknown";
             db.logKick(event.getUniqueId(), event.getName(), ip, "Not Whitelisted");

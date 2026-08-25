@@ -1,4 +1,3 @@
-# SimpleWhitelist local release build script for Windows PowerShell
 $ErrorActionPreference = "Stop"
 
 Write-Host "[1/3] Building Paper plugin..." -ForegroundColor Cyan

@@ -8,11 +8,10 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme';
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'whitelist.db');
 
-// Make sure the folder for the db file exists (in case this app creates it first)
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL'); // safer for two processes (plugin + webapp) touching the same file
+db.pragma('journal_mode = WAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS whitelist (
@@ -30,13 +29,11 @@ db.exec(`
 `);
 
 console.log(`Using whitelist database at: ${DB_PATH}`);
-console.log('Make sure your Paper plugin\'s config.yml "database-path" points at this same file.');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- very simple shared-password auth for the API ---
 function requireAuth(req, res, next) {
   const auth = req.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -54,9 +51,7 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ ok: false, error: 'Wrong password' });
 });
 
-// --- Mojang UUID lookup (needed because the plugin keys everything by UUID) ---
 function normalizeUuid(raw) {
-  // Mojang returns UUIDs with no dashes; Java's UUID.toString() has dashes.
   const hex = raw.replace(/-/g, '');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
@@ -69,7 +64,6 @@ async function lookupUuid(username) {
   return { uuid: normalizeUuid(data.id), username: data.name };
 }
 
-// --- Whitelist CRUD ---
 app.get('/api/players', requireAuth, (req, res) => {
   const rows = db.prepare('SELECT uuid, username, added_by, added_at FROM whitelist ORDER BY username COLLATE NOCASE').all();
   res.json(rows);
@@ -105,7 +99,6 @@ app.delete('/api/players/:uuid', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// --- Recent connections log, so you can see who's actually joined ---
 app.get('/api/connections', requireAuth, (req, res) => {
   const rows = db.prepare(`
     SELECT uuid, username, ip, connected_at

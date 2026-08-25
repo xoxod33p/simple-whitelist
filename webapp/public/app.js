@@ -146,5 +146,4 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Poll connections periodically so joins show up without a manual refresh
 setInterval(() => { if (token) loadConnections(); }, 15000);

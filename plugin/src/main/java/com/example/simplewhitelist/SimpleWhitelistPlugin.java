@@ -18,7 +18,6 @@ public class SimpleWhitelistPlugin extends JavaPlugin {
         String path = getConfig().getString("database-path", "plugins/SimpleWhitelist/whitelist.db");
         File dbFile = new File(path);
         if (!dbFile.isAbsolute()) {
-            // Relative paths resolve against the server's working directory (server root)
             dbFile = new File(getServer().getWorldContainer(), path);
         }
 
@@ -34,9 +33,6 @@ public class SimpleWhitelistPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new WhitelistListener(db, kickMessage, logConnections), this);
 
-        // Real-time synchronization:
-        // Periodically checks all currently connected players against the SQLite database.
-        // If an admin removes a player via the web app while they are online, they are kicked in real time.
         int syncIntervalSeconds = getConfig().getInt("sync-interval-seconds", 2);
         if (syncIntervalSeconds > 0) {
             long ticks = syncIntervalSeconds * 20L;

@@ -16,7 +16,6 @@
     </properties>
 
     <repositories>
-        <!-- Paper API -->
         <repository>
             <id>papermc</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
@@ -24,7 +23,6 @@
     </repositories>
 
     <dependencies>
-        <!-- Paper server API. "provided" because the server already has it at runtime. -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
@@ -32,7 +30,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- SQLite JDBC driver - bundled into the plugin jar via shade below -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
@@ -54,7 +51,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <!-- Relocate to avoid clashing with other plugins that might bundle sqlite -->
                             <relocations>
                                 <relocation>
                                     <pattern>org.sqlite</pattern>

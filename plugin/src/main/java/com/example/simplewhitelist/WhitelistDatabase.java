@@ -12,12 +12,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-/**
- * Thin wrapper around a SQLite file shared with the companion web app.
- * Opens a fresh connection per call (SQLite handles this fine at this scale)
- * so the plugin never holds a long-lived lock that could block the web app
- * from writing to the same file.
- */
 public class WhitelistDatabase {
 
     private final String jdbcUrl;

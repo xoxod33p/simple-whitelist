@@ -22,7 +22,6 @@ public class WhitelistListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOW)
     public void onPreLogin(AsyncPlayerPreLoginEvent event) {
-        // Runs before the player joins; checks if allowed in SQLite database
         boolean allowed = db.isWhitelisted(event.getUniqueId());
         if (!allowed) {
             Component message = LegacyComponentSerializer.legacyAmpersand().deserialize(kickMessage);

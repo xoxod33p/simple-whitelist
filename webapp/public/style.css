@@ -119,6 +119,12 @@ header {
   box-shadow: 0 0 8px var(--accent);
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .server-status {
   color: var(--muted);
   font-size: 12px;

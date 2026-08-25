@@ -1,4 +1,4 @@
-let token = null;
+let token = localStorage.getItem('swl_token') || null;
 let whitelistedUuids = new Set();
 let whitelistedNames = new Set();
 
@@ -7,6 +7,7 @@ const appScreen = document.getElementById('app-screen');
 const passwordInput = document.getElementById('password-input');
 const loginBtn = document.getElementById('login-btn');
 const loginError = document.getElementById('login-error');
+const logoutBtn = document.getElementById('logout-btn');
 
 const addUsername = document.getElementById('add-username');
 const addBtn = document.getElementById('add-btn');
@@ -32,6 +33,7 @@ async function login() {
       return;
     }
     token = data.token;
+    localStorage.setItem('swl_token', token);
     loginScreen.classList.add('hidden');
     appScreen.classList.remove('hidden');
     await loadPlayers();
@@ -42,8 +44,36 @@ async function login() {
   }
 }
 
+function logout() {
+  token = null;
+  localStorage.removeItem('swl_token');
+  appScreen.classList.add('hidden');
+  loginScreen.classList.remove('hidden');
+  passwordInput.value = '';
+}
+
+if (logoutBtn) logoutBtn.addEventListener('click', logout);
 loginBtn.addEventListener('click', login);
 passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+async function initSession() {
+  if (!token) return;
+  try {
+    const res = await fetch('/api/players', { headers: authHeaders() });
+    if (res.ok) {
+      loginScreen.classList.add('hidden');
+      appScreen.classList.remove('hidden');
+      await loadPlayers();
+      loadConnections();
+      loadKicks();
+    } else {
+      token = null;
+      localStorage.removeItem('swl_token');
+    }
+  } catch (err) {}
+}
+
+initSession();
 
 function authHeaders() {
   return { 'Authorization': `Bearer ${token}` };

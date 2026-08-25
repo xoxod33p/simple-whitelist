@@ -34,6 +34,9 @@ public class WhitelistDatabase {
 
     public void init() {
         try (Connection c = getConnection(); Statement st = c.createStatement()) {
+            st.execute("PRAGMA journal_mode = WAL;");
+            st.execute("PRAGMA synchronous = NORMAL;");
+            st.execute("PRAGMA busy_timeout = 5000;");
             st.executeUpdate("""
                 CREATE TABLE IF NOT EXISTS whitelist (
                     uuid TEXT PRIMARY KEY,
@@ -57,7 +60,11 @@ public class WhitelistDatabase {
     }
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(jdbcUrl);
+        Connection c = DriverManager.getConnection(jdbcUrl);
+        try (Statement st = c.createStatement()) {
+            st.execute("PRAGMA busy_timeout = 5000;");
+        }
+        return c;
     }
 
     public boolean isWhitelisted(UUID uuid) {

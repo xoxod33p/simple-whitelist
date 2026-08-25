@@ -1,5 +1,8 @@
 package com.example.simplewhitelist;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -30,6 +33,22 @@ public class SimpleWhitelistPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(
                 new WhitelistListener(db, kickMessage, logConnections), this);
+
+        // Real-time synchronization:
+        // Periodically checks all currently connected players against the SQLite database.
+        // If an admin removes a player via the web app while they are online, they are kicked in real time.
+        int syncIntervalSeconds = getConfig().getInt("sync-interval-seconds", 2);
+        if (syncIntervalSeconds > 0) {
+            long ticks = syncIntervalSeconds * 20L;
+            getServer().getScheduler().runTaskTimer(this, () -> {
+                for (Player player : getServer().getOnlinePlayers()) {
+                    if (!db.isWhitelisted(player.getUniqueId())) {
+                        Component message = LegacyComponentSerializer.legacyAmpersand().deserialize(kickMessage);
+                        player.kick(message);
+                    }
+                }
+            }, ticks, ticks);
+        }
     }
 
     public void reloadPluginConfig() {

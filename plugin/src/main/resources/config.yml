@@ -11,3 +11,10 @@ kick-message: "&cYou are not whitelisted on this server.\n&7Ask an admin to add 
 # (username, uuid, ip, timestamp) so the web app can show a "last seen" list.
 log-connections: true
 
+# Real-time synchronization interval (in seconds):
+# Checks all online players against the database. If an admin removes a player from
+# the web app while they are online, they are kicked immediately in real time.
+# Set to 0 to disable periodic checks.
+sync-interval-seconds: 2
+
+

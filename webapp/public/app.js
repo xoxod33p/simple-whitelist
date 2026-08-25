@@ -1,4 +1,6 @@
 let token = null;
+let whitelistedUuids = new Set();
+let whitelistedNames = new Set();
 
 const loginScreen = document.getElementById('login-screen');
 const appScreen = document.getElementById('app-screen');
@@ -32,7 +34,7 @@ async function login() {
     token = data.token;
     loginScreen.classList.add('hidden');
     appScreen.classList.remove('hidden');
-    loadPlayers();
+    await loadPlayers();
     loadConnections();
     loadKicks();
   } catch (err) {
@@ -65,6 +67,9 @@ async function loadPlayers() {
   const players = await res.json();
   playerCount.textContent = `${players.length} player${players.length === 1 ? '' : 's'}`;
 
+  whitelistedUuids = new Set(players.map(p => p.uuid));
+  whitelistedNames = new Set(players.map(p => (p.username || '').toLowerCase()));
+
   if (players.length === 0) {
     playersBody.innerHTML = '<tr><td colspan="4" class="muted">no one whitelisted yet</td></tr>';
     return;
@@ -72,7 +77,7 @@ async function loadPlayers() {
 
   playersBody.innerHTML = players.map(p => `
     <tr>
-      <td>${escapeHtml(p.username)}</td>
+      <td><strong>${escapeHtml(p.username)}</strong></td>
       <td class="uuid-cell">${p.uuid}</td>
       <td class="muted">${timeAgo(p.added_at)}</td>
       <td><button class="remove-btn" data-uuid="${p.uuid}">remove</button></td>
@@ -94,7 +99,7 @@ async function loadConnections() {
   }
   connectionsBody.innerHTML = rows.map(r => `
     <tr>
-      <td>${escapeHtml(r.username)}</td>
+      <td><strong>${escapeHtml(r.username)}</strong></td>
       <td class="muted">${escapeHtml(r.ip || '')}</td>
       <td class="muted">${timeAgo(r.connected_at)}</td>
     </tr>
@@ -109,22 +114,58 @@ async function loadKicks() {
     kicksBody.innerHTML = '<tr><td colspan="5" class="muted">no kicks or blocked attempts logged yet</td></tr>';
     return;
   }
-  kicksBody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.username)}</td>
-      <td><span class="tag-danger">${escapeHtml(r.reason || 'Not Whitelisted')}</span></td>
-      <td class="muted">${escapeHtml(r.ip || '')}</td>
-      <td class="muted">${timeAgo(r.kicked_at)}</td>
-      <td><button class="quick-add-btn" data-name="${escapeHtml(r.username)}">+ whitelist</button></td>
-    </tr>
-  `).join('');
+  kicksBody.innerHTML = rows.map(r => {
+    const isWhitelisted = (r.uuid && whitelistedUuids.has(r.uuid)) ||
+                          (r.username && whitelistedNames.has(r.username.toLowerCase()));
+    return `
+      <tr>
+        <td><strong>${escapeHtml(r.username)}</strong></td>
+        <td><span class="tag-danger">${escapeHtml(r.reason || 'Not Whitelisted')}</span></td>
+        <td class="muted">${escapeHtml(r.ip || '')}</td>
+        <td class="muted">${timeAgo(r.kicked_at)}</td>
+        <td>
+          ${isWhitelisted
+            ? '<span class="tag-allowed">whitelisted &#10003;</span>'
+            : `<button class="allow-btn" data-name="${escapeHtml(r.username)}" data-uuid="${escapeHtml(r.uuid || '')}">allow connection</button>`
+          }
+        </td>
+      </tr>
+    `;
+  }).join('');
 
-  document.querySelectorAll('.quick-add-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      addUsername.value = btn.dataset.name;
-      addPlayer();
-    });
+  document.querySelectorAll('.allow-btn').forEach(btn => {
+    btn.addEventListener('click', () => allowPlayer(btn.dataset.name, btn.dataset.uuid, btn));
   });
+}
+
+async function allowPlayer(username, uuid, btn) {
+  if (!username) return;
+  btn.disabled = true;
+  btn.textContent = 'allowing...';
+  try {
+    const res = await fetch('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ username, uuid })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      btn.textContent = 'failed';
+      btn.disabled = false;
+      addFeedback.textContent = data.error || 'Failed to allow player';
+      addFeedback.className = 'feedback err';
+      return;
+    }
+    btn.outerHTML = '<span class="tag-allowed">whitelisted &#10003;</span>';
+    addFeedback.textContent = `allowed and whitelisted ${data.username}`;
+    addFeedback.className = 'feedback ok';
+    await loadPlayers();
+  } catch (err) {
+    btn.textContent = 'error';
+    btn.disabled = false;
+    addFeedback.textContent = 'Network error';
+    addFeedback.className = 'feedback err';
+  }
 }
 
 async function addPlayer() {
@@ -143,16 +184,17 @@ async function addPlayer() {
     const data = await res.json();
     if (!res.ok) {
       addFeedback.textContent = data.error || 'Failed to add player';
-      addFeedback.classList.add('err');
+      addFeedback.className = 'feedback err';
       return;
     }
     addFeedback.textContent = `added ${data.username}`;
-    addFeedback.classList.add('ok');
+    addFeedback.className = 'feedback ok';
     addUsername.value = '';
-    loadPlayers();
+    await loadPlayers();
+    loadKicks();
   } catch (err) {
     addFeedback.textContent = 'Network error';
-    addFeedback.classList.add('err');
+    addFeedback.className = 'feedback err';
   } finally {
     addBtn.disabled = false;
   }
@@ -163,10 +205,15 @@ addUsername.addEventListener('keydown', (e) => { if (e.key === 'Enter') addPlaye
 
 async function removePlayer(uuid) {
   await fetch(`/api/players/${uuid}`, { method: 'DELETE', headers: authHeaders() });
-  loadPlayers();
+  await loadPlayers();
+  loadKicks();
 }
 
-refreshBtn.addEventListener('click', () => { loadPlayers(); loadConnections(); loadKicks(); });
+refreshBtn.addEventListener('click', async () => {
+  await loadPlayers();
+  loadConnections();
+  loadKicks();
+});
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -174,5 +221,12 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-setInterval(() => { if (token) { loadConnections(); loadKicks(); } }, 10000);
+setInterval(async () => {
+  if (token) {
+    await loadPlayers();
+    loadConnections();
+    loadKicks();
+  }
+}, 10000);
+
 

@@ -193,10 +193,17 @@ main {
 .feedback.ok { color: var(--accent); }
 .feedback.err { color: var(--danger); }
 
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
+  min-width: 480px;
 }
 
 th {
@@ -206,14 +213,16 @@ th {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 8px 6px;
+  padding: 8px 8px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 td {
-  padding: 10px 6px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  white-space: nowrap;
 }
 
 tr:last-child td { border-bottom: none; }
@@ -223,42 +232,73 @@ tr:last-child td { border-bottom: none; }
 .uuid-cell {
   color: var(--muted);
   font-size: 11px;
+  font-family: var(--mono);
 }
 
 .remove-btn {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--danger);
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 6px 12px;
+  font-size: 12px;
+  min-height: 32px;
 }
 
-.remove-btn:hover { border-color: var(--danger); }
+.remove-btn:hover { border-color: var(--danger); background: rgba(230, 104, 94, 0.1); }
 
-.quick-add-btn {
-  background: transparent;
-  border: 1px solid var(--accent-dim);
+.allow-btn {
+  background: rgba(94, 230, 160, 0.12);
+  border: 1px solid var(--accent);
   color: var(--accent);
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px;
+  white-space: nowrap;
+  min-height: 32px;
 }
 
-.quick-add-btn:hover {
+.allow-btn:hover {
   background: var(--accent);
   color: #06120c;
+}
+
+.allow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tag-allowed {
+  color: var(--accent);
+  font-size: 11px;
+  background: rgba(94, 230, 160, 0.12);
+  border: 1px solid var(--accent-dim);
+  padding: 4px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .tag-danger {
   color: var(--danger);
   font-size: 11px;
   background: rgba(230, 104, 94, 0.1);
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: 2px;
+  white-space: nowrap;
 }
 
-@media (max-width: 600px) {
-  main { padding: 16px; }
-  header { padding: 14px 16px; }
+@media (max-width: 640px) {
+  body { font-size: 13px; }
+  main { padding: 12px; gap: 16px; }
+  header { padding: 12px 14px; }
+  .panel { padding: 14px; }
+  .login-box { width: calc(100vw - 32px); padding: 24px; }
   .add-row { flex-direction: column; }
+  #add-btn { width: 100%; min-height: 42px; }
+  #password-input, #add-username { font-size: 16px; min-height: 42px; }
+  #login-btn { min-height: 42px; }
+  .ghost-btn { min-height: 32px; padding: 6px 12px; }
 }
+
 

@@ -77,14 +77,24 @@ app.get('/api/players', requireAuth, (req, res) => {
 });
 
 app.post('/api/players', requireAuth, async (req, res) => {
-  const { username } = req.body || {};
+  const { username, uuid } = req.body || {};
   if (!username || !username.trim()) {
     return res.status(400).json({ error: 'username is required' });
   }
+  const cleanName = username.trim();
+  if (uuid && typeof uuid === 'string' && uuid.trim().length >= 32) {
+    const finalUuid = normalizeUuid(uuid.trim());
+    db.prepare(`
+      INSERT INTO whitelist (uuid, username, added_by, added_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(uuid) DO UPDATE SET username = excluded.username
+    `).run(finalUuid, cleanName, 'webapp', Date.now());
+    return res.status(201).json({ uuid: finalUuid, username: cleanName });
+  }
   try {
-    const resolved = await lookupUuid(username.trim());
+    const resolved = await lookupUuid(cleanName);
     if (!resolved) {
-      return res.status(404).json({ error: `No Mojang account found for "${username}"` });
+      return res.status(404).json({ error: `No Mojang account found for "${cleanName}"` });
     }
     db.prepare(`
       INSERT INTO whitelist (uuid, username, added_by, added_at)

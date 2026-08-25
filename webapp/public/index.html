@@ -41,38 +41,44 @@
         <h2>Whitelisted players</h2>
         <button id="refresh-btn" class="ghost-btn">refresh</button>
       </div>
-      <table id="players-table">
-        <thead>
-          <tr><th>username</th><th>uuid</th><th>added</th><th></th></tr>
-        </thead>
-        <tbody id="players-body">
-          <tr><td colspan="4" class="muted">loading...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="players-table">
+          <thead>
+            <tr><th>username</th><th>uuid</th><th>added</th><th></th></tr>
+          </thead>
+          <tbody id="players-body">
+            <tr><td colspan="4" class="muted">loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="panel">
       <h2>Recent connections</h2>
-      <table id="connections-table">
-        <thead>
-          <tr><th>username</th><th>ip</th><th>when</th></tr>
-        </thead>
-        <tbody id="connections-body">
-          <tr><td colspan="3" class="muted">loading...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="connections-table">
+          <thead>
+            <tr><th>username</th><th>ip</th><th>when</th></tr>
+          </thead>
+          <tbody id="connections-body">
+            <tr><td colspan="3" class="muted">loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section class="panel">
       <h2>Recently kicked / blocked</h2>
-      <table id="kicks-table">
-        <thead>
-          <tr><th>username</th><th>reason</th><th>ip</th><th>when</th><th></th></tr>
-        </thead>
-        <tbody id="kicks-body">
-          <tr><td colspan="5" class="muted">loading...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table id="kicks-table">
+          <thead>
+            <tr><th>username</th><th>reason</th><th>ip</th><th>when</th><th>action</th></tr>
+          </thead>
+          <tbody id="kicks-body">
+            <tr><td colspan="5" class="muted">loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   </main>
 </div>

@@ -1,0 +1,13 @@
+# Path to the SQLite database file.
+# This is relative to the server's root folder unless you give an absolute path.
+# IMPORTANT: point the webapp's DB_PATH environment variable at this SAME file
+# so both the plugin and the web app read/write the same whitelist.
+database-path: "plugins/SimpleWhitelist/whitelist.db"
+
+# Message shown to players who are not on the whitelist
+kick-message: "&cYou are not whitelisted on this server.\n&7Ask an admin to add you via the web panel."
+
+# If true, players who successfully join are logged into the "connections" table
+# (username, uuid, ip, timestamp) so the web app can show a "last seen" list.
+log-connections: true
+

@@ -1,0 +1,7 @@
+name: SimpleWhitelist
+version: '1.0.0'
+main: com.example.simplewhitelist.SimpleWhitelistPlugin
+api-version: '1.20'
+author: You
+description: SQLite-backed whitelist verified via the companion web panel.
+

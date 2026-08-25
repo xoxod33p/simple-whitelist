@@ -1,0 +1,87 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Plugin & Webapp
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. Setup Java & Build Paper Plugin
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build Paper Plugin with Maven
+        run: |
+          cd plugin
+          mvn clean package --no-transfer-progress
+
+      - name: Verify plugin artifact
+        run: |
+          ls -la plugin/target/SimpleWhitelist.jar
+
+      # 2. Setup Node & Package Web App
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Package Web App
+        run: |
+          mkdir -p dist
+          cp plugin/target/SimpleWhitelist.jar dist/SimpleWhitelist.jar
+          
+          # Create zip archive of the webapp (excluding dev artifacts / db)
+          cd webapp
+          zip -r ../dist/webapp-dist.zip package.json server.js public/ -x "*.DS_Store"
+          cd ..
+
+      # 3. Generate SHA256 Checksums
+      - name: Generate Checksums
+        run: |
+          cd dist
+          sha256sum SimpleWhitelist.jar > SimpleWhitelist.jar.sha256
+          sha256sum webapp-dist.zip > webapp-dist.zip.sha256
+          cat SimpleWhitelist.jar.sha256
+          cat webapp-dist.zip.sha256
+
+      # 4. Upload build artifacts to GitHub Actions run
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: dist/*
+
+      # 5. Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: Release ${{ github.event.inputs.tag_name || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/SimpleWhitelist.jar
+            dist/SimpleWhitelist.jar.sha256
+            dist/webapp-dist.zip
+            dist/webapp-dist.zip.sha256

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whitelist Console</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login-screen" class="screen">
+  <div class="login-box">
+    <div class="prompt-line"><span class="prompt">$</span> whitelist --login</div>
+    <input id="password-input" type="password" placeholder="admin password" autocomplete="current-password">
+    <button id="login-btn">connect</button>
+    <div id="login-error" class="error-text"></div>
+  </div>
+</div>
+
+<div id="app-screen" class="screen hidden">
+  <header>
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span>whitelist console</span>
+    </div>
+    <div class="server-status" id="player-count">-- players</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Add player</h2>
+      <div class="add-row">
+        <input id="add-username" type="text" placeholder="Minecraft username" autocomplete="off">
+        <button id="add-btn">add to whitelist</button>
+      </div>
+      <div id="add-feedback" class="feedback"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Whitelisted players</h2>
+        <button id="refresh-btn" class="ghost-btn">refresh</button>
+      </div>
+      <table id="players-table">
+        <thead>
+          <tr><th>username</th><th>uuid</th><th>added</th><th></th></tr>
+        </thead>
+        <tbody id="players-body">
+          <tr><td colspan="4" class="muted">loading...</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Recent connections</h2>
+      <table id="connections-table">
+        <thead>
+          <tr><th>username</th><th>ip</th><th>when</th></tr>
+        </thead>
+        <tbody id="connections-body">
+          <tr><td colspan="3" class="muted">loading...</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -89,7 +89,6 @@ public class WhitelistDatabase {
     }
 
     public boolean isWhitelisted(UUID uuid, String username, boolean strictUuidMatch) {
-        // 1. Check by exact UUID match first
         String sqlByUuid = "SELECT uuid, username FROM whitelist WHERE uuid = ? COLLATE NOCASE LIMIT 1";
         try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sqlByUuid)) {
             ps.setString(1, uuid.toString());
@@ -107,12 +106,10 @@ public class WhitelistDatabase {
             return false;
         }
 
-        // If strict UUID matching is enabled, deny non-matching UUIDs to prevent name-spoofing
         if (strictUuidMatch) {
             return false;
         }
 
-        // 2. Fallback to username matching (only if strictUuidMatch is false)
         String sqlByName = "SELECT uuid, username FROM whitelist WHERE username = ? COLLATE NOCASE LIMIT 1";
         try (Connection c = getConnection(); PreparedStatement ps = c.prepareStatement(sqlByName)) {
             ps.setString(1, username);

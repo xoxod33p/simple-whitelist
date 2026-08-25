@@ -26,7 +26,7 @@ if (Test-Path $webappZip) {
 }
 
 $webappDir = "$PSScriptRoot\..\webapp"
-Compress-Archive -Path "$webappDir\package.json", "$webappDir\server.js", "$webappDir\public" -DestinationPath $webappZip
+Compress-Archive -Path "$webappDir\package.json", "$webappDir\server.js", "$webappDir\public", "$webappDir\.env.example" -DestinationPath $webappZip
 
 Write-Host "`nRelease build complete!" -ForegroundColor Green
 Write-Host "Artifacts are in: $distDir"

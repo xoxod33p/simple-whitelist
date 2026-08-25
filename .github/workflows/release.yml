@@ -49,7 +49,7 @@ jobs:
           mkdir -p dist
           cp plugin/target/SimpleWhitelist.jar dist/SimpleWhitelist.jar
           cd webapp
-          zip -r ../dist/webapp-dist.zip package.json server.js public/ -x "*.DS_Store"
+          zip -r ../dist/webapp-dist.zip package.json server.js public/ .env.example -x "*.DS_Store"
           cd ..
 
       - name: Generate Checksums

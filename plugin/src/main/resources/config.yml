@@ -2,11 +2,8 @@ database-path: "plugins/SimpleWhitelist/whitelist.db"
 kick-message: "&cYou are not whitelisted on this server.\n&7Ask an admin to add you via the web panel."
 log-connections: true
 sync-interval-seconds: 2
-
-# Security settings:
-# When true, strictly verifies UUID matches to prevent username-spoofing / account hijacking.
-# Keep true for online-mode servers. Set to false only if using purely offline names without UUID consistency.
 strict-uuid-match: true
+
 
 
 

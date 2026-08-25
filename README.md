@@ -23,12 +23,12 @@ A lightweight Minecraft (Paper) whitelist plugin with a real-time web management
    npm install
    ```
 
-2. Create a `.env` file with your server details:
+2. Create a `.env` file (or copy `.env.example`) with your server details:
    ```env
    DB_PATH=/path/to/your/server/plugins/SimpleWhitelist/whitelist.db
    PORT=3000
    ADMIN_PASSWORD=your_secure_password
-   SESSION_SECRET=your_random_secret_string # (Optional, auto-generated if omitted)
+   SESSION_SECRET=your_random_secret_string
    ```
 
 3. Start the web app:

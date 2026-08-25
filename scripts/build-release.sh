@@ -22,7 +22,7 @@ cp "$JAR_PATH" "$DIST_DIR/SimpleWhitelist.jar"
 
 echo "==> [3/3] Packaging webapp bundle..."
 cd "$ROOT_DIR/webapp"
-zip -r "$DIST_DIR/webapp-dist.zip" package.json server.js public/ -x "*.DS_Store"
+zip -r "$DIST_DIR/webapp-dist.zip" package.json server.js public/ .env.example -x "*.DS_Store"
 
 echo "==> Generating checksums..."
 cd "$DIST_DIR"

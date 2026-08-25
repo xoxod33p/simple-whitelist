@@ -8,7 +8,7 @@ const Database = require('better-sqlite3');
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme';
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data', 'whitelist.db');
 
 if (ADMIN_PASSWORD === 'changeme') {
@@ -46,7 +46,6 @@ console.log(`Using whitelist database at: ${DB_PATH}`);
 
 const app = express();
 
-// Security HTTP headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -58,7 +57,6 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Timing-safe password verification
 function verifyPassword(inputPassword) {
   if (typeof inputPassword !== 'string') return false;
   const hashInput = crypto.createHash('sha256').update(inputPassword, 'utf8').digest();
@@ -66,7 +64,6 @@ function verifyPassword(inputPassword) {
   return crypto.timingSafeEqual(hashInput, hashTarget);
 }
 
-// Generate signed session token
 function createSessionToken() {
   const payload = {
     iat: Date.now(),
@@ -78,7 +75,6 @@ function createSessionToken() {
   return `${payloadEncoded}.${signature}`;
 }
 
-// Verify signed session token
 function verifySessionToken(token) {
   if (!token || typeof token !== 'string') return false;
   const parts = token.split('.');
@@ -105,7 +101,6 @@ function verifySessionToken(token) {
   }
 }
 
-// In-memory sliding rate limiter for login
 const loginAttempts = new Map();
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_PERIOD_MS = 15 * 60 * 1000;
@@ -185,7 +180,6 @@ function isValidUuid(uuid) {
 }
 
 function isValidUsername(username) {
-  // Allows Java usernames (3-16 chars) and Bedrock/Floodgate prefixed names (up to 36 chars)
   return typeof username === 'string' && /^[a-zA-Z0-9_.* -]{1,36}$/.test(username.trim());
 }
 

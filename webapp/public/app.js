@@ -14,7 +14,6 @@ const addBtn = document.getElementById('add-btn');
 const addFeedback = document.getElementById('add-feedback');
 const refreshBtn = document.getElementById('refresh-btn');
 const playersBody = document.getElementById('players-body');
-const connectionsBody = document.getElementById('connections-body');
 const kicksBody = document.getElementById('kicks-body');
 const playerCount = document.getElementById('player-count');
 
@@ -37,7 +36,6 @@ async function login() {
     loginScreen.classList.add('hidden');
     appScreen.classList.remove('hidden');
     await loadPlayers();
-    loadConnections();
     loadKicks();
   } catch (err) {
     loginError.textContent = 'Could not reach server';
@@ -64,7 +62,6 @@ async function initSession() {
       loginScreen.classList.add('hidden');
       appScreen.classList.remove('hidden');
       await loadPlayers();
-      loadConnections();
       loadKicks();
     } else {
       token = null;
@@ -128,25 +125,6 @@ async function loadPlayers() {
     document.querySelectorAll('.remove-btn').forEach(btn => {
       btn.addEventListener('click', () => removePlayer(btn.dataset.uuid));
     });
-  } catch (err) {}
-}
-
-async function loadConnections() {
-  try {
-    const res = await fetchAuth('/api/connections');
-    if (!res.ok) return;
-    const rows = await res.json();
-    if (rows.length === 0) {
-      connectionsBody.innerHTML = '<tr><td colspan="3" class="muted">no connections logged yet</td></tr>';
-      return;
-    }
-    connectionsBody.innerHTML = rows.map(r => `
-      <tr>
-        <td><strong>${escapeHtml(r.username)}</strong></td>
-        <td class="muted">${escapeHtml(r.ip || '')}</td>
-        <td class="muted">${timeAgo(r.connected_at)}</td>
-      </tr>
-    `).join('');
   } catch (err) {}
 }
 
@@ -259,7 +237,6 @@ async function removePlayer(uuid) {
 
 refreshBtn.addEventListener('click', async () => {
   await loadPlayers();
-  loadConnections();
   loadKicks();
 });
 
@@ -273,7 +250,6 @@ function escapeHtml(str) {
 setInterval(async () => {
   if (token) {
     await loadPlayers();
-    loadConnections();
     loadKicks();
   }
 }, 10000);

@@ -141,15 +141,9 @@ main {
 
 .tables-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
-}
-
-.tables-col {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .panel {
@@ -314,9 +308,6 @@ tr:last-child td { border-bottom: none; }
   }
   .tables-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .tables-col {
     gap: 20px;
   }
 }

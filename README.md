@@ -1,98 +1,57 @@
-# SimpleWhitelist — Paper plugin + web panel
+# Simple Whitelist
 
-Two pieces sharing one SQLite file:
+A lightweight Minecraft (Paper) whitelist plugin with a real-time web management panel.
 
-- **plugin/** — a Paper plugin (Java) that checks the whitelist when a player tries to
-  join (`AsyncPlayerPreLoginEvent`), kicks non-whitelisted players, and logs successful connections.
-- **webapp/** — a small Node/Express site to add, remove, and view whitelisted
-  players and recent connections from a browser.
+---
 
-They never talk to each other over the network — they just read/write the same
-`whitelist.db` SQLite file, so changes made in the web panel take effect immediately on the
-very next login attempt.
+## Quick Setup
 
-## 1. Build the plugin
+### 1. Install Plugin
+1. Download **`SimpleWhitelist.jar`** from [Releases](https://github.com/xoxod33p/simple-whitelist/releases).
+2. Put it into your server's **`plugins/`** folder.
+3. Start the server once. It creates:
+   ```
+   plugins/SimpleWhitelist/whitelist.db
+   ```
 
-Requires Java 17+ and Maven.
+---
 
-```bash
-cd plugin
-mvn clean package
-```
+### 2. Run Web Panel
+1. Open the `webapp` folder and install dependencies:
+   ```bash
+   cd webapp
+   npm install
+   ```
 
-This produces `plugin/target/SimpleWhitelist.jar`. Drop it into your Paper
-server's `plugins/` folder and start the server once so it generates:
+2. Create a `.env` file with your server details:
+   ```env
+   DB_PATH=/path/to/your/server/plugins/SimpleWhitelist/whitelist.db
+   PORT=3000
+   ADMIN_PASSWORD=your_password
+   ```
 
-```
-plugins/SimpleWhitelist/config.yml
-plugins/SimpleWhitelist/whitelist.db
-```
+3. Start the web app:
+   ```bash
+   npm start
+   ```
 
-Open `config.yml` and note the `database-path` — the server console also prints
-the absolute path on startup, e.g.:
+4. Open **`http://localhost:3000`** in your browser and log in.
 
-```
-[SimpleWhitelist] Using whitelist database at: /home/you/server/plugins/SimpleWhitelist/whitelist.db
-```
+---
 
-**Minecraft's own whitelist enforcement isn't required** — this plugin
-does its own check independently of `whitelist.json`, so you don't need to run
-`/whitelist on`. Non-whitelisted players are kicked on connect with the configurable kick message,
-and all whitelisting is handled seamlessly through the web panel.
+## Features
 
+- **Real-Time Sync**: Players added or removed on the web panel take effect instantly without restarting or reloading the server.
+- **Recently Kicked / Blocked List**: View blocked connection attempts and whitelist players with a single click (`+ allow connection`).
+- **Online & Offline Mode Support**: Works seamlessly with official Mojang accounts, offline/cracked servers, and proxy networks (Velocity/BungeeCord).
+- **Mobile Friendly**: Clean, touch-optimized responsive design.
+- **Persistent Session**: Stay logged in even after page refreshes.
+- **No In-Game Commands Needed**: Pure web-based management.
 
-## 2. Run the web panel
+---
 
-Requires Node.js 18+.
+## Build from Source
 
-```bash
-cd webapp
-npm install
-cp .env.example .env
-```
+- **Plugin**: `cd plugin && mvn clean package`
+- **Release Assets**: `./scripts/build-release.sh` (Linux/macOS) or `./scripts/build-release.ps1` (Windows)
 
-Edit `.env`:
-- `DB_PATH` — point this at the **exact same file** the plugin printed above.
-- `ADMIN_PASSWORD` — set a real password, this gates the whole panel.
-- `PORT` — defaults to 3000.
-
-```bash
-npm start
-```
-
-Visit `http://localhost:3000` (or your server's IP:port if hosting remotely),
-log in with `ADMIN_PASSWORD`, and manage the whitelist from there. Adding a
-player looks up their UUID via Mojang's API, so you can add someone by
-username even if they've never joined before.
-
-## How it fits together
-
-```
- Web panel  ──writes──▶  whitelist.db (SQLite)  ◀──reads── Paper plugin
- (Node/Express)                                            (on player login)
-```
-
-- Table `whitelist(uuid, username, added_by, added_at)` — who's allowed in.
-- Table `connections(uuid, username, ip, connected_at)` — a log of joins,
-  visible in the panel's "Recent connections" list.
-
-## Notes / things you may want to change
-
-- The web panel's auth is a single shared password (Bearer token), good enough
-  for a small private server. For anything more exposed, put it behind a
-  reverse proxy with real auth (or extend it — it's plain Express).
-- If you run the webapp on a **different machine** than the game server,
-  `DB_PATH` needs a network filesystem (e.g. mounting the server's plugin
-  folder over SFTP/NFS/Samba) — SQLite itself doesn't do remote access. The
-  simpler setup is running both on the same box.
-- `journal_mode = WAL` is enabled on the webapp's connection so it plays nicely
-  with the plugin also having the file open.
-- The plugin targets Paper 1.20.4 in `pom.xml` — bump the `paper-api` version
-  there to match your server if you're on a different version.
-
-## 3. Releases & CI
-
-- **Automated Releases**: Push a git tag (e.g. `v1.0.0`) or trigger the GitHub Actions workflow manually to generate a release with `SimpleWhitelist.jar`, `webapp-dist.zip`, and SHA256 checksums.
-- **Local Packaging**:
-  - Windows: run `./scripts/build-release.ps1`
-  - Linux/macOS: run `./scripts/build-release.sh`
